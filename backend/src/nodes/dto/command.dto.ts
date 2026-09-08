@@ -6,6 +6,9 @@ export const ALLOWED_COMMANDS = [
   'GET_GPU_STATUS',
   'SET_NODE_AVAILABILITY',
   'RUN_GPU_TEST',
+  'START_JUPYTER_CONTAINER',
+  'STOP_JUPYTER_CONTAINER',
+  'GET_CONTAINER_STATUS',
 ] as const;
 
 export type AllowedCommand = (typeof ALLOWED_COMMANDS)[number];

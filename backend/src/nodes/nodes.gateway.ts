@@ -340,7 +340,10 @@ export class NodesGateway
       { command, params, commandId },
     );
 
-    const timeoutMs = command === 'RUN_GPU_TEST' ? 60000 : 15000;
+    const timeoutMs =
+      command === 'RUN_GPU_TEST' || command === 'START_JUPYTER_CONTAINER'
+        ? 60000
+        : 15000;
 
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {

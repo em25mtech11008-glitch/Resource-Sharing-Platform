@@ -12,6 +12,7 @@ from config import AgentConfig
 from sys_info import get_system_info
 from gpu_monitor import get_gpu_telemetry
 from gpu_tester import GpuTester
+from container_runner import ContainerRunner
 
 logger = logging.getLogger("GPU-Agent.Connection")
 
@@ -22,6 +23,9 @@ SAFE_COMMANDS = {
     "GET_GPU_STATUS",
     "SET_NODE_AVAILABILITY",
     "RUN_GPU_TEST",
+    "START_JUPYTER_CONTAINER",
+    "STOP_JUPYTER_CONTAINER",
+    "GET_CONTAINER_STATUS",
 }
 
 class AgentConnection:
@@ -29,6 +33,7 @@ class AgentConnection:
         self.node_id = node_id
         self.config = config
         self.gpu_tester = GpuTester()
+        self.container_runner = ContainerRunner(node_id)
         self.start_time = time.time()
         self.availability = "AVAILABLE"
 
@@ -338,6 +343,62 @@ class AgentConnection:
                         "status": test_result.get("status", "UNKNOWN"),
                         "results": test_result,
                         "error": test_result.get("error"),
+                        "timestamp": time.time(),
+                    },
+                })
+
+            elif command_name == "START_JUPYTER_CONTAINER":
+                port = int(params.get("port", 8888))
+                loop = asyncio.get_running_loop()
+                container_res = await loop.run_in_executor(
+                    None,
+                    self.container_runner.start_jupyter,
+                    port,
+                )
+                await self._send_json({
+                    "type": "COMMAND_RESULT",
+                    "payload": {
+                        "commandId": command_id,
+                        "node_id": self.node_id,
+                        "command": "START_JUPYTER_CONTAINER",
+                        "status": container_res.get("status", "SUCCESS"),
+                        "output": container_res,
+                        "timestamp": time.time(),
+                    },
+                })
+
+            elif command_name == "STOP_JUPYTER_CONTAINER":
+                loop = asyncio.get_running_loop()
+                container_res = await loop.run_in_executor(
+                    None,
+                    self.container_runner.stop_jupyter,
+                )
+                await self._send_json({
+                    "type": "COMMAND_RESULT",
+                    "payload": {
+                        "commandId": command_id,
+                        "node_id": self.node_id,
+                        "command": "STOP_JUPYTER_CONTAINER",
+                        "status": container_res.get("status", "SUCCESS"),
+                        "output": container_res,
+                        "timestamp": time.time(),
+                    },
+                })
+
+            elif command_name == "GET_CONTAINER_STATUS":
+                loop = asyncio.get_running_loop()
+                container_res = await loop.run_in_executor(
+                    None,
+                    self.container_runner.get_status,
+                )
+                await self._send_json({
+                    "type": "COMMAND_RESULT",
+                    "payload": {
+                        "commandId": command_id,
+                        "node_id": self.node_id,
+                        "command": "GET_CONTAINER_STATUS",
+                        "status": "SUCCESS",
+                        "output": container_res,
                         "timestamp": time.time(),
                     },
                 })

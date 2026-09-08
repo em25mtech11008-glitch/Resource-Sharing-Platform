@@ -291,6 +291,9 @@ Dispatches a safe allowlisted command to an online node.
 - `GET_GPU_STATUS`
 - `SET_NODE_AVAILABILITY` (`params: { "status": "AVAILABLE" | "BUSY" }`)
 - `RUN_GPU_TEST` (`params: { "duration": 5, "gpu_index": 0 }`)
+- `START_JUPYTER_CONTAINER` (`params: { "port": 8888 }`)
+- `STOP_JUPYTER_CONTAINER`
+- `GET_CONTAINER_STATUS`
 
 **Response (200 OK):**
 ```json

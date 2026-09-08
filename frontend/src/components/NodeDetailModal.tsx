@@ -13,6 +13,9 @@ import {
   Play,
   CheckCircle,
   AlertCircle,
+  Boxes,
+  ExternalLink,
+  Square,
 } from "lucide-react";
 import { NodeData } from "./NodeCard";
 
@@ -39,10 +42,26 @@ export const NodeDetailModal: React.FC<NodeDetailModalProps> = ({
   const [events, setEvents] = useState<any[]>([]);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [lastCommandOutput, setLastCommandOutput] = useState<CommandOutput | null>(null);
+  const [containerInfo, setContainerInfo] = useState<any>(null);
 
   useEffect(() => {
     if (!node) return;
     fetchDetails();
+    // Query initial container status if node is online
+    if (node.isWsConnected && node.status !== "OFFLINE") {
+      fetch(`${apiBaseUrl}/api/nodes/${node.node_id}/command`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ command: "GET_CONTAINER_STATUS" }),
+      })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.success && d.result?.output) {
+            setContainerInfo(d.result.output);
+          }
+        })
+        .catch(() => {});
+    }
     const interval = setInterval(fetchDetails, 3000);
     return () => clearInterval(interval);
   }, [node?.node_id]);
@@ -85,6 +104,21 @@ export const NodeDetailModal: React.FC<NodeDetailModalProps> = ({
           timestamp: new Date().toLocaleTimeString(),
           result: data.result,
         });
+
+        // Update containerInfo state if container command
+        if (
+          command === "START_JUPYTER_CONTAINER" ||
+          command === "GET_CONTAINER_STATUS"
+        ) {
+          if (data.result?.output) {
+            setContainerInfo(data.result.output);
+          }
+        } else if (command === "STOP_JUPYTER_CONTAINER") {
+          setContainerInfo((prev: any) => ({
+            ...prev,
+            running: false,
+          }));
+        }
       } else {
         setLastCommandOutput({
           command,
@@ -260,6 +294,90 @@ export const NodeDetailModal: React.FC<NodeDetailModalProps> = ({
                     2
                   )}
                 </pre>
+              </div>
+            )}
+          </div>
+
+          {/* Predefined Docker Workload Section */}
+          <div className="bg-[#0d1117] border border-[#30363d] rounded-xl p-4 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center space-x-2">
+                <Boxes className="w-4 h-4 text-emerald-400" />
+                <h3 className="text-sm font-semibold text-white">
+                  Sandboxed Workload (Predefined Jupyter)
+                </h3>
+                <span className="text-[11px] px-2 py-0.5 rounded bg-[#161b22] text-gray-400 border border-[#30363d]">
+                  Isolated Docker Template
+                </span>
+              </div>
+
+              {containerInfo?.running ? (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800">
+                  <span className="w-1.5 h-1.5 mr-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Container Running
+                </span>
+              ) : (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs text-gray-400 bg-[#161b22] border border-[#30363d]">
+                  Not Deployed
+                </span>
+              )}
+            </div>
+
+            <p className="text-xs text-gray-400">
+              Deploy a secure, isolated Jupyter Notebook environment on this node. Uses pre-approved image with automatic NVIDIA GPU passthrough (<code className="text-emerald-400 font-mono">--gpus all</code>).
+            </p>
+
+            {containerInfo?.running ? (
+              <div className="bg-[#161b22] border border-[#30363d] rounded-lg p-3 space-y-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                  <div>
+                    <span className="text-gray-500">Container:</span>{" "}
+                    <span className="text-gray-200 font-mono">{containerInfo.container_name || "p2p-gpu-jupyter"}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Port:</span>{" "}
+                    <span className="text-gray-200 font-mono">{containerInfo.port || 8888}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">GPU Mode:</span>{" "}
+                    <span className={containerInfo.gpu_enabled ? "text-emerald-400 font-semibold" : "text-amber-400"}>
+                      {containerInfo.gpu_enabled ? "NVIDIA Passthrough Active" : "CPU Fallback"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={() => window.open(containerInfo.access_url, "_blank")}
+                    className="px-3 py-1.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors flex items-center space-x-1.5 shadow-sm"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Open Jupyter Notebook</span>
+                  </button>
+
+                  <button
+                    disabled={loadingAction !== null}
+                    onClick={() => dispatchCommand("STOP_JUPYTER_CONTAINER")}
+                    className="px-3 py-1.5 text-xs font-medium bg-rose-950/40 hover:bg-rose-900/50 text-rose-300 border border-rose-800/60 rounded-lg transition-colors flex items-center space-x-1.5"
+                  >
+                    <Square className="w-3.5 h-3.5" />
+                    <span>Stop Notebook</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="pt-1 flex flex-col sm:flex-row sm:items-center gap-3">
+                <button
+                  disabled={!isOnline || loadingAction !== null}
+                  onClick={() => dispatchCommand("START_JUPYTER_CONTAINER", { port: 8888 })}
+                  className="px-3 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white rounded-lg transition-all flex items-center space-x-1.5 shadow-sm self-start sm:self-auto"
+                >
+                  <Boxes className="w-3.5 h-3.5" />
+                  <span>Deploy Jupyter Notebook (Port 8888)</span>
+                </button>
+                <span className="text-[11px] text-gray-500">
+                  Zero host filesystem access; runs inside sandboxed container.
+                </span>
               </div>
             )}
           </div>
