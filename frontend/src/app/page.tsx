@@ -20,15 +20,29 @@ export default function DashboardPage() {
   const [isWsConnected, setIsWsConnected] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Configuration URLs
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
-  const wsBaseUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:4000";
+  // Configuration URLs (dynamically detected from browser window location)
+  const [apiBaseUrl, setApiBaseUrl] = useState("http://localhost:4000");
+  const [wsBaseUrl, setWsBaseUrl] = useState("ws://localhost:4000");
 
   const wsRef = useRef<WebSocket | null>(null);
 
-  const fetchNodes = async () => {
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const hostname = window.location.hostname;
+      const protocol = window.location.protocol === "https:" ? "https:" : "http:";
+      const wsProto = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const computedApi = process.env.NEXT_PUBLIC_API_URL || `${protocol}//${hostname}:4000`;
+      const computedWs = process.env.NEXT_PUBLIC_WS_URL || `${wsProto}//${hostname}:4000`;
+      setApiBaseUrl(computedApi);
+      setWsBaseUrl(computedWs);
+      fetchNodes(computedApi);
+    }
+  }, []);
+
+  const fetchNodes = async (targetApi?: string) => {
+    const apiUrl = targetApi || apiBaseUrl;
     try {
-      const res = await fetch(`${apiBaseUrl}/api/nodes`);
+      const res = await fetch(`${apiUrl}/api/nodes`);
       if (res.ok) {
         const data = await res.json();
         setSummary(data.summary);
@@ -41,12 +55,11 @@ export default function DashboardPage() {
     }
   };
 
-  // Initial Fetch & Polling Fallback
+  // Periodic polling fallback
   useEffect(() => {
-    fetchNodes();
-    const interval = setInterval(fetchNodes, 5000);
+    const interval = setInterval(() => fetchNodes(), 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [apiBaseUrl]);
 
   // Real-time WebSocket connection for Dashboard
   useEffect(() => {
@@ -158,7 +171,7 @@ export default function DashboardPage() {
             </div>
 
             <button
-              onClick={fetchNodes}
+              onClick={() => fetchNodes()}
               className="px-3 py-1.5 text-xs font-medium text-gray-300 bg-[#161b22] hover:bg-[#21262d] border border-[#30363d] rounded-lg transition-colors flex items-center self-start sm:self-auto space-x-1.5"
             >
               <RefreshCw className="w-3.5 h-3.5" />
