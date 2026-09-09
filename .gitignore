@@ -1,6 +1,8 @@
 node_modules/
 .next/
 dist/
+build/
+*.spec
 __pycache__/
 *.pyc
 data/

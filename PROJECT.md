@@ -130,24 +130,34 @@ On **Machine B**:
 
 ---
 
-### Step 3.4: Launch the Agent on Machine B
+### Step 3.3: Launch the Agent Application on Machine B
 
-Run the agent, specifying Machine A's IP with the `--server` parameter:
+You can run the agent in **Graphical App Mode** (recommended for users) or **CLI Mode**:
 
+#### Method 1: Graphical Desktop App (One-Click)
+- **On Windows:** Simply double-click **`Run-Agent-App.bat`** (or run `python app.py` in PowerShell).
+- **On Linux:** Double-click **`run-agent-app.sh`** (or run `python3 app.py` in Terminal).
+
+The application window will open:
+1. **Enter Central Server Address:** Type your server IP (e.g. `172.25.134.9:4000` or `ws://172.25.134.9:4000`).
+2. **Enter Node Name:** Type a display nickname (e.g. `My-Gaming-Rig`).
+3. **Click ▶ START AGENT:**
+   - The status changes to **🟢 CONNECTED**.
+   - Your detected GPU model, VRAM, and live activity logs appear immediately in the app window!
+4. **Click ⏹ STOP AGENT:** Gracefully stops the agent whenever you want to pause sharing your GPU.
+
+#### Method 2: Command Line (CLI)
+If you prefer running in the terminal without a GUI:
 ```powershell
 python main.py --server ws://172.25.134.9:4000 --name "LivingRoom-GPU-Rig"
 ```
-*(On Linux, use `python3 main.py ...`)*.
 
-#### Expected Output in Terminal on Machine B:
-```text
-[2026-09-08 12:00:00] [INFO] [GPU-Agent] Starting P2P GPU Node Agent...
-[2026-09-08 12:00:00] [INFO] [GPU-Agent] Target Platform URL: ws://172.25.134.9:4000
-[2026-09-08 12:00:00] [INFO] [GPU-Agent.Identity] Generated and saved new persistent Node ID: node-xxxx...
-[2026-09-08 12:00:01] [INFO] [GPU-Agent.Connection] Connected to central backend WebSocket.
-[2026-09-08 12:00:01] [INFO] [GPU-Agent.Connection] Sending NODE_REGISTER for node-xxxx with 1 detected GPU(s)...
-[2026-09-08 12:00:01] [INFO] [GPU-Agent.Connection] Node registered acknowledged by platform!
+#### Method 3: Standalone Executable (.exe)
+To package the agent into a single executable file that requires no Python installation:
+```powershell
+python build_exe.py
 ```
+This generates **`dist/GPUNodeAgent.exe`** (on Windows) or **`dist/GPUNodeAgent`** (on Linux). Anyone can simply double-click the `.exe` to launch the app!
 
 ---
 

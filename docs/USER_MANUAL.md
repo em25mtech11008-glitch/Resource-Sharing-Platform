@@ -49,26 +49,33 @@ pip install -r requirements.txt
 
 The agent is pre-configured to connect locally (`ws://localhost:4000`), but you can easily point it to a remote platform server.
 
-### Option A: Command-Line Flags (Easiest)
-Specify your server URL and an optional nickname for your node:
+### Option A: Graphical Desktop Application (Easiest & Recommended)
+- **On Windows:** Simply double-click **`Run-Agent-App.bat`** in the `agent` folder.
+- **On Linux:** Double-click or run **`./run-agent-app.sh`** (or `python3 app.py`).
+
+The application window will open:
+1. Enter your Central Platform Address (e.g. `172.25.134.9:4000`).
+2. Enter your Node Nickname (e.g. `My-Gaming-Rig`).
+3. Click **▶ START AGENT**.
+4. The status turns green (**🟢 CONNECTED**), and your GPU hardware stats and live logs will stream right inside the app!
+5. Click **⏹ STOP AGENT** whenever you wish to pause or disconnect.
+
+---
+
+### Option B: Command-Line Flags (CLI Mode)
+If you prefer running in the terminal without a GUI:
 ```bash
-python3 main.py --server ws://your-server-ip:4000 --name "LivingRoom-RTX4090"
+python main.py --server ws://your-server-ip:4000 --name "LivingRoom-RTX4090"
 ```
 
-### Option B: Configuration File
-Create a file named `config.json` inside the `agent/` folder:
-```json
-{
-  "server_url": "ws://your-server-ip:4000",
-  "node_name": "LivingRoom-RTX4090",
-  "heartbeat_interval": 10,
-  "metrics_interval": 5
-}
-```
-Then simply launch:
+---
+
+### Option C: Standalone Executable (.exe)
+To package the agent into a single executable file that requires no manual Python installation:
 ```bash
-python3 main.py
+python build_exe.py
 ```
+This generates **`dist/GPUNodeAgent.exe`** on Windows (or `dist/GPUNodeAgent` on Linux). Anyone can simply double-click the `.exe` file to open the app!
 
 ---
 
