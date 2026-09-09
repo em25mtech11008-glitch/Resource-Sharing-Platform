@@ -46,6 +46,21 @@ def parse_args():
         help="Path to JSON configuration file",
     )
     parser.add_argument(
+        "--gui",
+        action="store_true",
+        help="Launch the Graphical User Interface (GUI / Web Control Panel)",
+    )
+    parser.add_argument(
+        "--web",
+        action="store_true",
+        help="Launch the embedded Web User Interface (localhost:5050)",
+    )
+    parser.add_argument(
+        "--cli",
+        action="store_true",
+        help="Run in Command Line (CLI) mode directly in this terminal",
+    )
+    parser.add_argument(
         "--data-dir",
         type=str,
         default="data",
@@ -107,6 +122,12 @@ async def async_main():
         logger.info("P2P GPU Node Agent stopped cleanly.")
 
 def main():
+    # If --gui or --web requested, launch User Interface
+    if "--gui" in sys.argv or "--web" in sys.argv:
+        from app import main as app_main
+        app_main()
+        return
+
     try:
         asyncio.run(async_main())
     except KeyboardInterrupt:
