@@ -1,4 +1,5 @@
 import subprocess
+import shutil
 import logging
 from typing import List, Dict, Any, Optional
 
@@ -6,6 +7,7 @@ logger = logging.getLogger("GPU-Agent.GpuMonitor")
 
 # Track whether NVML was initialized successfully
 _NVML_INITIALIZED = False
+_NVML_FAILED = False
 _NVML_AVAILABLE = False
 
 try:
@@ -21,8 +23,8 @@ except ImportError:
 
 def _init_nvml() -> bool:
     """Safely initializes NVML once."""
-    global _NVML_INITIALIZED
-    if not _NVML_AVAILABLE:
+    global _NVML_INITIALIZED, _NVML_FAILED
+    if not _NVML_AVAILABLE or _NVML_FAILED:
         return False
     if _NVML_INITIALIZED:
         return True
@@ -33,7 +35,8 @@ def _init_nvml() -> bool:
         logger.info("NVIDIA NVML initialized successfully.")
         return True
     except Exception as e:
-        logger.debug(f"NVML initialization failed: {e}")
+        _NVML_FAILED = True
+        logger.debug(f"NVML initialization failed (CPU mode will be used): {e}")
         return False
 
 
@@ -119,8 +122,22 @@ def _query_via_nvml() -> Optional[List[Dict[str, Any]]]:
         return None
 
 
+_NVIDIA_SMI_AVAILABLE: Optional[bool] = None
+_NO_GPU_LOGGED = False
+
+
 def _query_via_nvidia_smi() -> Optional[List[Dict[str, Any]]]:
     """Fallback: Queries GPU telemetry using nvidia-smi CLI."""
+    global _NVIDIA_SMI_AVAILABLE
+    if _NVIDIA_SMI_AVAILABLE is False:
+        return None
+
+    if _NVIDIA_SMI_AVAILABLE is None:
+        if not shutil.which("nvidia-smi"):
+            _NVIDIA_SMI_AVAILABLE = False
+            return None
+        _NVIDIA_SMI_AVAILABLE = True
+
     query_fields = [
         "index",
         "name",
@@ -196,6 +213,8 @@ def get_gpu_telemetry() -> List[Dict[str, Any]]:
     Attempts NVML first, then falls back to nvidia-smi.
     Does NOT use mock data. If no NVIDIA GPU is found, returns an empty list.
     """
+    global _NO_GPU_LOGGED
+
     # 1. Primary: NVML
     gpus = _query_via_nvml()
     if gpus is not None:
@@ -207,6 +226,10 @@ def get_gpu_telemetry() -> List[Dict[str, Any]]:
         return gpus
 
     # 3. No hardware / driver present
+    if not _NO_GPU_LOGGED:
+        _NO_GPU_LOGGED = True
+        logger.info("No NVIDIA GPU or driver detected on this host. Running in CPU telemetry mode.")
+
     return []
 
 

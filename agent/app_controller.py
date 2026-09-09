@@ -44,10 +44,15 @@ class AgentController:
         self.thread: Optional[threading.Thread] = None
         self.loop: Optional[asyncio.AbstractEventLoop] = None
 
-        # Setup in-memory log capture
-        self.log_handler = LogCaptureHandler(max_entries=150)
-        self.log_handler.setFormatter(logging.Formatter("%(message)s"))
+        from logger import setup_logger
+        setup_logger("GPU-Agent", log_dir=data_dir)
         root_logger = logging.getLogger("GPU-Agent")
+        root_logger.setLevel(logging.DEBUG)
+
+        # Setup in-memory log capture (filter to INFO so internal debug polling doesn't spam UI)
+        self.log_handler = LogCaptureHandler(max_entries=150)
+        self.log_handler.setLevel(logging.INFO)
+        self.log_handler.setFormatter(logging.Formatter("%(message)s"))
         root_logger.addHandler(self.log_handler)
 
     def normalize_server_url(self, raw_url: str) -> str:
@@ -105,11 +110,15 @@ class AgentController:
 
         if self.agent and self.loop:
             # Schedule graceful stop on agent's event loop
-            asyncio.run_coroutine_threadsafe(self.agent.stop(), self.loop)
+            try:
+                future = asyncio.run_coroutine_threadsafe(self.agent.stop(), self.loop)
+                future.result(timeout=2.0)
+            except Exception:
+                pass
 
         # Wait briefly for thread completion
         if self.thread and self.thread.is_alive():
-            self.thread.join(timeout=2.0)
+            self.thread.join(timeout=1.5)
 
         self.status = "STOPPED"
         self.agent = None
@@ -158,6 +167,7 @@ class AgentController:
             self.status = "ERROR"
         finally:
             self.status = "STOPPED"
+            self.agent = None
             try:
                 self.loop.close()
             except Exception:

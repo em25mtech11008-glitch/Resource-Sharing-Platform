@@ -72,11 +72,11 @@ class AgentConnection:
                     await self._send_registration()
 
                     # Run background loops concurrently
-                    await asyncio.gather(
-                        self._heartbeat_loop(),
-                        self._metrics_loop(),
-                        self._incoming_message_loop(),
-                    )
+                    t_hb = asyncio.create_task(self._heartbeat_loop())
+                    t_met = asyncio.create_task(self._metrics_loop())
+                    t_msg = asyncio.create_task(self._incoming_message_loop())
+                    self._tasks = [t_hb, t_met, t_msg]
+                    await asyncio.gather(t_hb, t_met, t_msg, return_exceptions=True)
 
             except (ConnectionClosed, ConnectionRefusedError, OSError) as e:
                 self._connected = False
@@ -114,6 +114,11 @@ class AgentConnection:
             except Exception:
                 pass
         self._connected = False
+
+        # Cancel any active coroutines so they exit immediately
+        for t in getattr(self, "_tasks", []):
+            if not t.done():
+                t.cancel()
 
     async def _send_json(self, data: Dict[str, Any]):
         """Helper to send JSON safely over the WebSocket."""

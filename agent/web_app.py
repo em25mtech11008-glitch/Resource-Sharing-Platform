@@ -359,9 +359,39 @@ class AgentAppRequestHandler(http.server.BaseHTTPRequestHandler):
 
 def run_web_app(port: int = 5050, open_browser: bool = True):
     socketserver.TCPServer.allow_reuse_address = True
-    server = socketserver.TCPServer(("127.0.0.1", port), AgentAppRequestHandler)
-    app_url = f"http://localhost:{port}"
+    server = None
+    active_port = port
 
+    # Check ports in range to handle collisions gracefully
+    for p in range(port, port + 10):
+        # Check if another Agent Control Panel is already running on this port
+        try:
+            import urllib.request
+            with urllib.request.urlopen(f"http://localhost:{p}/api/state", timeout=0.5) as resp:
+                if resp.status == 200:
+                    app_url = f"http://localhost:{p}"
+                    print("==================================================")
+                    print("   P2P GPU Node Agent — Application Control")
+                    print(f"   Agent is ALREADY RUNNING at: {app_url}")
+                    print("==================================================")
+                    if open_browser:
+                        webbrowser.open(app_url)
+                    return
+        except Exception:
+            pass
+
+        try:
+            server = socketserver.TCPServer(("0.0.0.0", p), AgentAppRequestHandler)
+            active_port = p
+            break
+        except OSError:
+            continue
+
+    if server is None:
+        print(f"[ERROR] Could not bind to any port in range {port}-{port + 9}. Please check running processes.")
+        return
+
+    app_url = f"http://localhost:{active_port}"
     print("==================================================")
     print("   P2P GPU Node Agent — Application Control")
     print(f"   Opening Control Panel at: {app_url}")
