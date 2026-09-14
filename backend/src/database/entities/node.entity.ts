@@ -37,13 +37,12 @@ export class NodeEntity {
   ram: string;
 
   @Column({
-    type: 'enum',
-    enum: NodeStatus,
+    type: 'varchar',
     default: NodeStatus.OFFLINE,
   })
   status: NodeStatus;
 
-  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
   last_seen: Date;
 
   @OneToMany(() => GpuEntity, (gpu) => gpu.node, { cascade: true })
@@ -52,9 +51,9 @@ export class NodeEntity {
   @OneToMany(() => NodeEventEntity, (event) => event.node)
   events: NodeEventEntity[];
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn()
   created_at: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz' })
+  @UpdateDateColumn()
   updated_at: Date;
 }

@@ -28,9 +28,9 @@ export class NodeEventEntity {
   @Column({ type: 'text' })
   message: string;
 
-  @Column({ type: 'jsonb', nullable: true })
+  @Column({ type: 'simple-json', nullable: true })
   metadata: Record<string, any>;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn()
   timestamp: Date;
 }

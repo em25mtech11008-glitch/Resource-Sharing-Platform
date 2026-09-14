@@ -47,8 +47,7 @@ export class GpuEntity {
   driver_version: string;
 
   @Column({
-    type: 'enum',
-    enum: GpuAvailability,
+    type: 'varchar',
     default: GpuAvailability.AVAILABLE,
   })
   availability: GpuAvailability;
@@ -56,9 +55,9 @@ export class GpuEntity {
   @OneToMany(() => GpuMetricEntity, (metric) => metric.gpu, { cascade: true })
   metrics: GpuMetricEntity[];
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn()
   created_at: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz' })
+  @UpdateDateColumn()
   updated_at: Date;
 }

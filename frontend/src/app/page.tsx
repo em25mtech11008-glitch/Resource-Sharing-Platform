@@ -5,7 +5,8 @@ import { Header } from "@/components/Header";
 import { SummaryCards } from "@/components/SummaryCards";
 import { NodeCard, NodeData } from "@/components/NodeCard";
 import { NodeDetailModal } from "@/components/NodeDetailModal";
-import { Server, RefreshCw, Terminal, CheckCircle2 } from "lucide-react";
+import { Server, RefreshCw, Terminal, CheckCircle2, LogOut } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function DashboardPage() {
   const [summary, setSummary] = useState({
@@ -25,6 +26,14 @@ export default function DashboardPage() {
   const [wsBaseUrl, setWsBaseUrl] = useState("ws://localhost:4000");
 
   const wsRef = useRef<WebSocket | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.push("/login");
+    }
+  }, [router]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -42,7 +51,12 @@ export default function DashboardPage() {
   const fetchNodes = async (targetApi?: string) => {
     const apiUrl = targetApi || apiBaseUrl;
     try {
-      const res = await fetch(`${apiUrl}/api/nodes`);
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${apiUrl}/api/nodes`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       if (res.ok) {
         const data = await res.json();
         setSummary(data.summary);
@@ -149,8 +163,24 @@ export default function DashboardPage() {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    router.push("/login");
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-[#0d1117]">
+      <div className="flex justify-between items-center w-full px-6 pt-4">
+        <div className="flex-1"></div>
+        <button
+          onClick={handleLogout}
+          className="px-3 py-1.5 text-xs font-medium text-gray-300 bg-[#161b22] hover:bg-red-900/30 border border-[#30363d] rounded-lg transition-colors flex items-center space-x-1.5"
+        >
+          <LogOut className="w-3.5 h-3.5" />
+          <span>Logout</span>
+        </button>
+      </div>
       <Header isWsConnected={isWsConnected} />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8 space-y-8">

@@ -47,6 +47,6 @@ export class GpuMetricEntity {
   @Column({ type: 'float', default: 0 })
   power_limit: number; // Watts
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn()
   timestamp: Date;
 }
