@@ -13,8 +13,8 @@ def main():
     parser.add_argument("--port", type=int, default=5050, help="Port for the local Web UI (default 5050)")
     args, unknown = parser.parse_known_args()
 
-    # If --cli or --server specified, run pure Command Line mode
-    if args.cli or args.server:
+    # If --cli or --server specified (and not requesting web mode), run pure Command Line mode
+    if (args.cli or args.server) and not args.web:
         import asyncio
         from main import async_main
         try:
